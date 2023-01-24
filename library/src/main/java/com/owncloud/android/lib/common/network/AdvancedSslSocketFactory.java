@@ -25,6 +25,9 @@
 package com.owncloud.android.lib.common.network;
 
 import com.nextcloud.common.DNSCache;
+import android.content.Context;
+import android.util.Log;
+
 import com.owncloud.android.lib.common.utils.Log_OC;
 
 import org.apache.commons.httpclient.ConnectTimeoutException;
@@ -49,6 +52,7 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
+import de.ritscher.ssl.InteractiveKeyManager;
 
 
 /**
@@ -65,12 +69,14 @@ public class AdvancedSslSocketFactory implements SecureProtocolSocketFactory {
     private SSLContext mSslContext = null;
     private AdvancedX509TrustManager mTrustManager = null;
     private X509HostnameVerifier mHostnameVerifier = null;
+    private Context mContext = null;
 
     /**
      * Constructor for AdvancedSSLProtocolSocketFactory.
      */
     public AdvancedSslSocketFactory(
-            SSLContext sslContext, AdvancedX509TrustManager trustManager, X509HostnameVerifier hostnameVerifier
+             SSLContext sslContext, AdvancedX509TrustManager trustManager, X509HostnameVerifier hostnameVerifier,
+            Context context
     ) {
 
         if (sslContext == null)
@@ -83,6 +89,8 @@ public class AdvancedSslSocketFactory implements SecureProtocolSocketFactory {
         mSslContext = sslContext;
         mTrustManager = trustManager;
         mHostnameVerifier = hostnameVerifier;
+	mContext = context;
+
     }
 
     public SSLContext getSslContext() {
@@ -249,8 +257,14 @@ public class AdvancedSslSocketFactory implements SecureProtocolSocketFactory {
             ///	(that should be an instance of AdvancedX509TrustManager) 
             try {
                 SSLSocket sock = (SSLSocket) socket;    // a new SSLSession instance is created as a "side effect" 
-                sock.startHandshake();
+   try {
 
+                    sock.startHandshake();
+                } catch (SSLHandshakeException e1) {
+                    Log.w(TAG, "SSL handshake failed; remove key chain aliases disabled", e1);
+                    //new InteractiveKeyManager(mContext).removeKeys(sock.getInetAddress().getHostName(), sock.getPort());
+                    throw e1;
+                }
             } catch (RuntimeException e) {
 
                 if (e instanceof CertificateCombinedException) {
