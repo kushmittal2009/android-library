@@ -46,6 +46,7 @@ import okhttp3.Request
 import org.apache.commons.httpclient.HttpStatus
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 
@@ -76,7 +77,7 @@ class NextcloudClient private constructor(
         private fun createDefaultClient(context: Context): OkHttpClient {
             val trustManager = AdvancedX509TrustManager(NetworkUtils.getKnownServersStore(context))
 
-            val sslContext = NetworkUtils.getSSLContext()
+            val sslContext = SSLContext.getInstance("TLSv1.3")
 
             sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
             val sslSocketFactory = sslContext.socketFactory
